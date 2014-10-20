@@ -124,7 +124,10 @@ public class Scraper {
 											alert.show();
 										}
 										else
+										{
 											alert.setVisible(true);
+											alert.setState(Frame.ICONIFIED);
+										}
 
 										alerted = true;
 										break;
