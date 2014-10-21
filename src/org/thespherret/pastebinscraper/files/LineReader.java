@@ -51,4 +51,25 @@ public final class LineReader {
 		return lines;
 	}
 
+	public static String readStringFromBuffer(BufferedReader reader)
+	{
+		StringBuilder lines = new StringBuilder();
+
+		try
+		{
+			String line;
+			while ((line = reader.readLine()) != null)
+			{
+				lines.append(line).append("\n");
+			}
+
+			reader.close();
+		} catch (IOException e)
+		{
+			e.printStackTrace();
+		}
+
+		return lines.toString();
+	}
+
 }

@@ -31,4 +31,26 @@ public final class LineWriter {
 		}
 	}
 
+	public static boolean writeString(File file, String text)
+	{
+		try
+		{
+			BufferedWriter writer = new BufferedWriter(new FileWriter(file));
+
+			writer.write(text);
+
+			for (String line : text.split("\n"))
+			{
+				writer.write(line);
+			}
+
+			writer.flush();
+			writer.close();
+			return true;
+		} catch (IOException e)
+		{
+			return false;
+		}
+	}
+
 }

@@ -6,8 +6,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
 
 public class Paste {
 
@@ -15,14 +13,14 @@ public class Paste {
 	private String name;
 	private String id;
 
-	private List<String> text = new ArrayList<>();
+	private String text;
 
 	public String getId()
 	{
 		return id;
 	}
 
-	public List<String> getText()
+	public String getText()
 	{
 		return text;
 	}
@@ -45,7 +43,7 @@ public class Paste {
 		this.name = pasteParts[1];
 		try
 		{
-			this.text = LineReader.readBuffer(new BufferedReader(new InputStreamReader(new URL("http://pastebin.com/download.php?i=" + this.id).openConnection().getInputStream())));
+			this.text = LineReader.readStringFromBuffer(new BufferedReader(new InputStreamReader(new URL("http://pastebin.com/download.php?i=" + this.id).openConnection().getInputStream())));
 		} catch (IOException e)
 		{
 			e.printStackTrace();
