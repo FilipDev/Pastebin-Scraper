@@ -24,6 +24,8 @@ public class Scraper {
 	private boolean silent = false;
 	private boolean run;
 
+	private boolean isScraping = false;
+
 	private File outputDirectory;
 
 	private String alertStrings[] = {};
@@ -58,97 +60,107 @@ public class Scraper {
 		this.run = false;
 	}
 
+	public boolean isRunning()
+	{
+		return this.run;
+	}
+
+	public boolean isScraping()
+	{
+		return this.isScraping;
+	}
+
 	public Set<String> pastes = new HashSet<>();
 
 	public Set<Paste> run()
 	{
-		while (true)
+		while (run)
 		{
 			try
 			{
-				if (run)
+				isScraping = true;
+				for (final Paste paste : scrape())
 				{
-					for (final Paste paste : scrape())
+					if (!pastes.contains(paste.getId()))
 					{
-						if (!pastes.contains(paste.getId()))
+						pastes.add(paste.getId());
+
+						File outputFile = new File(outputDirectory.getAbsolutePath() + File.separator + paste.getName() + "-" + paste.getId() + ".txt");
+
+						if (outputFile.exists())
+							continue;
+
+						System.out.println("======================================================");
+						System.out.println(paste.getId() + ":");
+						System.out.println(paste.getText());
+
+						boolean alerted = false;
+
+						if (alertStrings.length != 0)
 						{
-							pastes.add(paste.getId());
-
-							File outputFile = new File(outputDirectory.getAbsolutePath() + File.separator + paste.getName() + "-" + paste.getId() + ".txt");
-
-							if (outputFile.exists())
-								continue;
-
-							System.out.println("======================================================");
-							System.out.println(paste.getId() + ":");
-							System.out.println(paste.getText());
-
-							boolean alerted = false;
-
-							if (alertStrings.length != 0)
+							for (String alertString : alertStrings)
 							{
-								for (String alertString : alertStrings)
+								if (paste.getText().contains(alertString))
 								{
-									if (paste.getText().contains(alertString))
-									{
-										final JFrame alert = new JFrame("Paste with term " + alertString + " found.");
+									final JFrame alert = new JFrame("Paste with term " + alertString + " found.");
 
-										alert.setLayout(new GridLayout());
+									alert.setLayout(new GridLayout());
 
-										JTextArea textArea = new JTextArea("Found term \"" + alertString + "\" in the paste " + paste.getName() + "\n");
-										textArea.append("Link to paste: " + paste.getUrl() + "\n\n\n");
-										int indexOfKeyword = paste.getText().indexOf(alertString);
-										textArea.append("Preview: \n" + paste.getText().substring((indexOfKeyword - 40) < 0 ? 0 : (indexOfKeyword - 40), (indexOfKeyword + 40) > paste.getText().length() ? 0 : (indexOfKeyword + 40)));
-										JButton copyButton = new JButton("Click to open URL.");
+									JTextArea textArea = new JTextArea("Found term \"" + alertString + "\" in the paste " + paste.getName() + "\n");
+									textArea.append("Link to paste: " + paste.getUrl() + "\n\n\n");
+									int indexOfKeyword = paste.getText().indexOf(alertString);
+									textArea.append("Preview: \n" + paste.getText().substring((indexOfKeyword - 40) < 0 ? 0 : (indexOfKeyword - 40), (indexOfKeyword + 40) > paste.getText().length() ? 0 : (indexOfKeyword + 40)));
+									JButton copyButton = new JButton("Click to open URL.");
 
-										copyButton.addActionListener(new ActionListener() {
-											@Override
-											public void actionPerformed(ActionEvent e)
+									copyButton.addActionListener(new ActionListener() {
+										@Override
+										public void actionPerformed(ActionEvent e)
+										{
+											try
 											{
-												try
-												{
-													Desktop.getDesktop().browse(new URI(paste.getUrl()));
-													alert.dispose();
-												} catch (IOException | URISyntaxException e1)
-												{
-													e1.printStackTrace();
-												}
+												Desktop.getDesktop().browse(new URI(paste.getUrl()));
+												alert.dispose();
+											} catch (IOException | URISyntaxException e1)
+											{
+												e1.printStackTrace();
 											}
-										});
-										textArea.setEditable(false);
-										alert.getContentPane().add(textArea);
-										alert.getContentPane().add(copyButton);
-										alert.setSize(900, 450);
-										alert.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-
-										if (!this.silent)
-										{
-											alert.getToolkit().beep();
-											alert.show();
 										}
-										else
-										{
-											alert.setVisible(true);
-											alert.setState(Frame.ICONIFIED);
-										}
+									});
+									textArea.setEditable(false);
+									alert.getContentPane().add(textArea);
+									alert.getContentPane().add(copyButton);
+									alert.setSize(900, 450);
+									alert.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 
-										alerted = true;
-										break;
+									if (!this.silent)
+									{
+										alert.getToolkit().beep();
+										alert.show();
 									}
+									else
+									{
+										alert.setState(Frame.ICONIFIED);
+										alert.setVisible(true);
+									}
+
+									alerted = true;
+									break;
 								}
 							}
-
-							if (alerted || saveAll)
-								LineWriter.writeString(outputFile, paste.getText());
 						}
+
+						if (alerted || saveAll)
+							LineWriter.writeString(outputFile, paste.getText());
 					}
 				}
+				isScraping = false;
 				Thread.sleep(180 * 1000L);
 			} catch (InterruptedException e)
 			{
 				e.printStackTrace();
 			}
 		}
+		return null;
 	}
 
 	public Set<Paste> scrape()

@@ -2,18 +2,64 @@ package org.thespherret.pastebinscraper;
 
 import org.thespherret.pastebinscraper.scraper.Scraper;
 
+import javax.swing.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.File;
-import java.util.Arrays;
 
-public class Main {
+public class Main extends JFrame {
 
 	public static void main(String[] args)
 	{
-		System.out.println("Started scraper.");
-
-		Scraper scraper = new Scraper(true, new File(args[0]), Arrays.copyOfRange(args, 1, args.length - 1));
-		scraper.start();
-		scraper.run();
+		new Main();
 	}
 
+	private JPanel panel1;
+	private JTextField keywordsTextField;
+	private JCheckBox silentModeCheckBox;
+	private JCheckBox onlySaveWhenKeywordCheckBox;
+	private JTextField destinationTextField;
+	private JButton startButton;
+	private JButton stopButton;
+
+	private Scraper scraper;
+
+	public Main()
+	{
+        super("Pastebin Scraper");
+		setContentPane(panel1);
+		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		pack();
+		show();
+		startButton.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e)
+			{
+				if (scraper != null)
+				{
+					if (scraper.isScraping())
+						return;
+
+					if (scraper.isRunning())
+						scraper.stop();
+				}
+
+				System.out.println(silentModeCheckBox);
+				System.out.println(destinationTextField.getText());
+				System.out.println(onlySaveWhenKeywordCheckBox.isSelected());
+				System.out.println(keywordsTextField.getSelectedText());
+				scraper = new Scraper(silentModeCheckBox.isSelected(), new File(destinationTextField.getText().replace("\\", "\\\\")), !onlySaveWhenKeywordCheckBox.isSelected(), keywordsTextField.getText().split(" "));
+				scraper.start();
+				scraper.run();
+			}
+		});
+		stopButton.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e)
+			{
+				if (scraper != null)
+					scraper.stop();
+			}
+		});
+	}
 }
