@@ -20,178 +20,148 @@ import java.util.Set;
 
 public class Scraper {
 
-	private boolean saveAll = true;
-	private boolean silent = false;
-	private boolean run;
+    public Set<String> pastes = new HashSet<>();
+    private boolean saveAll = true;
+    private boolean silent  = false;
+    private boolean run;
+    private boolean isScraping = false;
+    private File outputDirectory;
+    private String alertStrings[] = {};
 
-	private boolean isScraping = false;
+    public Scraper(File directory) {
+        this.outputDirectory = directory;
+    }
 
-	private File outputDirectory;
+    public Scraper(boolean silent, File directory, String... alertStrings) {
+        this.outputDirectory = directory;
+        this.alertStrings = alertStrings;
+        this.silent = silent;
+    }
 
-	private String alertStrings[] = {};
+    public Scraper(boolean silent, File directory, boolean saveAll, String... alertStrings) {
+        this.outputDirectory = directory;
+        this.alertStrings = alertStrings;
+        this.saveAll = saveAll;
+        this.silent = silent;
+    }
 
-	public Scraper(File directory)
-	{
-		this.outputDirectory = directory;
-	}
+    public void start() {
+        this.run = true;
+    }
 
-	public Scraper(boolean silent, File directory, String... alertStrings)
-	{
-		this.outputDirectory = directory;
-		this.alertStrings = alertStrings;
-		this.silent = silent;
-	}
+    public void stop() {
+        this.run = false;
+    }
 
-	public Scraper(boolean silent, File directory, boolean saveAll, String... alertStrings)
-	{
-		this.outputDirectory = directory;
-		this.alertStrings = alertStrings;
-		this.saveAll = saveAll;
-		this.silent = silent;
-	}
+    public boolean isRunning() {
+        return this.run;
+    }
 
-	public void start()
-	{
-		this.run = true;
-	}
+    public boolean isScraping() {
+        return this.isScraping;
+    }
 
-	public void stop()
-	{
-		this.run = false;
-	}
+    public Set<Paste> run() {
+        while (run) {
+            try {
+                isScraping = true;
+                for (final Paste paste : scrape()) {
+                    if (!pastes.contains(paste.getId())) {
+                        pastes.add(paste.getId());
 
-	public boolean isRunning()
-	{
-		return this.run;
-	}
+                        File outputFile = new File(outputDirectory.getAbsolutePath() + File.separator + paste.getName() + "-" + paste.getId() + ".txt");
 
-	public boolean isScraping()
-	{
-		return this.isScraping;
-	}
+                        if (outputFile.exists())
+                            continue;
 
-	public Set<String> pastes = new HashSet<>();
+                        System.out.println("======================================================");
+                        System.out.println(paste.getId() + ":");
+                        System.out.println(paste.getText());
 
-	public Set<Paste> run()
-	{
-		while (run)
-		{
-			try
-			{
-				isScraping = true;
-				for (final Paste paste : scrape())
-				{
-					if (!pastes.contains(paste.getId()))
-					{
-						pastes.add(paste.getId());
+                        boolean alerted = false;
 
-						File outputFile = new File(outputDirectory.getAbsolutePath() + File.separator + paste.getName() + "-" + paste.getId() + ".txt");
+                        if (alertStrings.length != 0) {
+                            for (String alertString : alertStrings) {
+                                if (paste.getText().contains(alertString)) {
+                                    final JFrame alert = new JFrame("Paste with term " + alertString + " found.");
 
-						if (outputFile.exists())
-							continue;
+                                    alert.setLayout(new GridLayout());
 
-						System.out.println("======================================================");
-						System.out.println(paste.getId() + ":");
-						System.out.println(paste.getText());
+                                    JTextArea textArea = new JTextArea("Found term \"" + alertString + "\" in the paste " + paste.getName() + "\n");
+                                    textArea.append("Link to paste: " + paste.getUrl() + "\n\n\n");
+                                    int indexOfKeyword = paste.getText().indexOf(alertString);
+                                    textArea.append("Preview: \n" + paste.getText().substring((indexOfKeyword - 40) < 0 ? 0 : (indexOfKeyword - 40), (indexOfKeyword + 40) > paste.getText().length() ? 0 : (indexOfKeyword + 40)));
+                                    JButton copyButton = new JButton("Click to open URL.");
 
-						boolean alerted = false;
+                                    copyButton.addActionListener(new ActionListener() {
+                                        @Override
+                                        public void actionPerformed(ActionEvent e) {
+                                            try {
+                                                Desktop.getDesktop().browse(new URI(paste.getUrl()));
+                                                alert.dispose();
+                                            } catch (IOException | URISyntaxException e1) {
+                                                e1.printStackTrace();
+                                            }
+                                        }
+                                    });
+                                    textArea.setEditable(false);
+                                    alert.getContentPane().add(textArea);
+                                    alert.getContentPane().add(copyButton);
+                                    alert.setSize(900, 450);
+                                    alert.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 
-						if (alertStrings.length != 0)
-						{
-							for (String alertString : alertStrings)
-							{
-								if (paste.getText().contains(alertString))
-								{
-									final JFrame alert = new JFrame("Paste with term " + alertString + " found.");
+                                    if (!this.silent) {
+                                        alert.getToolkit().beep();
+                                        alert.show();
+                                    }
+                                    else {
+                                        alert.setState(Frame.ICONIFIED);
+                                        alert.setVisible(true);
+                                    }
 
-									alert.setLayout(new GridLayout());
+                                    alerted = true;
+                                    break;
+                                }
+                            }
+                        }
 
-									JTextArea textArea = new JTextArea("Found term \"" + alertString + "\" in the paste " + paste.getName() + "\n");
-									textArea.append("Link to paste: " + paste.getUrl() + "\n\n\n");
-									int indexOfKeyword = paste.getText().indexOf(alertString);
-									textArea.append("Preview: \n" + paste.getText().substring((indexOfKeyword - 40) < 0 ? 0 : (indexOfKeyword - 40), (indexOfKeyword + 40) > paste.getText().length() ? 0 : (indexOfKeyword + 40)));
-									JButton copyButton = new JButton("Click to open URL.");
+                        if (alerted || saveAll)
+                            LineWriter.writeString(outputFile, paste.getText());
+                    }
+                }
+                isScraping = false;
+                Thread.sleep(180 * 1000L);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        return null;
+    }
 
-									copyButton.addActionListener(new ActionListener() {
-										@Override
-										public void actionPerformed(ActionEvent e)
-										{
-											try
-											{
-												Desktop.getDesktop().browse(new URI(paste.getUrl()));
-												alert.dispose();
-											} catch (IOException | URISyntaxException e1)
-											{
-												e1.printStackTrace();
-											}
-										}
-									});
-									textArea.setEditable(false);
-									alert.getContentPane().add(textArea);
-									alert.getContentPane().add(copyButton);
-									alert.setSize(900, 450);
-									alert.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+    public Set<Paste> scrape() {
+        Set<Paste> pastes = new HashSet<>();
+        try {
+            URL archive = new URL("http://pastebin.com/archive");
+            List<String> lines = LineReader.readBuffer(new BufferedReader(new InputStreamReader(archive.openConnection().getInputStream())));
 
-									if (!this.silent)
-									{
-										alert.getToolkit().beep();
-										alert.show();
-									}
-									else
-									{
-										alert.setState(Frame.ICONIFIED);
-										alert.setVisible(true);
-									}
+            lines = lines.subList(lines.indexOf("\t\t<table class=\"maintable\" cellspacing=\"0\">\n") + 5, lines.indexOf("\t\t</table>\n"));
 
-									alerted = true;
-									break;
-								}
-							}
-						}
+            for (String line : lines) {
+                if (line.contains("a href=\"/") && !line.startsWith("\t\t\t\t<td align=\"right\">")) {
+                    int endTag = line.lastIndexOf("</a>");
+                    if (endTag == -1)
+                        endTag = line.length() - 1;
+                    Paste paste = new Paste(line.substring(line.lastIndexOf("<a href=\"/") + 10, endTag));
 
-						if (alerted || saveAll)
-							LineWriter.writeString(outputFile, paste.getText());
-					}
-				}
-				isScraping = false;
-				Thread.sleep(180 * 1000L);
-			} catch (InterruptedException e)
-			{
-				e.printStackTrace();
-			}
-		}
-		return null;
-	}
+                    pastes.add(paste);
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
-	public Set<Paste> scrape()
-	{
-		Set<Paste> pastes = new HashSet<>();
-		try
-		{
-			URL archive = new URL("http://pastebin.com/archive");
-			List<String> lines = LineReader.readBuffer(new BufferedReader(new InputStreamReader(archive.openConnection().getInputStream())));
+        return pastes;
 
-			lines = lines.subList(lines.indexOf("\t\t<table class=\"maintable\" cellspacing=\"0\">\n") + 5, lines.indexOf("\t\t</table>\n"));
-
-			for (String line : lines)
-			{
-				if (line.contains("a href=\"/") && !line.startsWith("\t\t\t\t<td align=\"right\">"))
-				{
-					int endTag = line.lastIndexOf("</a>");
-					if (endTag == -1)
-						endTag = line.length() - 1;
-					Paste paste = new Paste(line.substring(line.lastIndexOf("<a href=\"/") + 10, endTag));
-
-					pastes.add(paste);
-				}
-			}
-		} catch (IOException e)
-		{
-			e.printStackTrace();
-		}
-
-		return pastes;
-
-	}
+    }
 
 }
