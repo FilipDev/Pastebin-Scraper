@@ -9,45 +9,38 @@ import java.net.URL;
 
 public class Paste {
 
-	private String url;
-	private String name;
-	private String id;
+    private String url;
+    private String name;
+    private String id;
 
-	private String text;
+    private String text;
 
-	public String getId()
-	{
-		return id;
-	}
+    public Paste(String paste) {
+        String[] pasteParts = paste.split("\">");
+        this.url = "http://www.pastebin.com/" + pasteParts[0];
+        this.id = pasteParts[0];
+        this.name = pasteParts.length != 2 ? "Untitled" : pasteParts[1];
+        try {
+            this.text = LineReader.readStringFromBuffer(new BufferedReader(new InputStreamReader(new URL("http://pastebin.com/download.php?i=" + this.id).openConnection().getInputStream())));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
-	public String getText()
-	{
-		return text;
-	}
+    public String getId() {
+        return id;
+    }
 
-	public String getUrl()
-	{
-		return url;
-	}
+    public String getText() {
+        return text;
+    }
 
-	public String getName()
-	{
-		return name;
-	}
+    public String getUrl() {
+        return url;
+    }
 
-	public Paste(String paste)
-	{
-		String[] pasteParts = paste.split("\">");
-		this.url = "http://www.pastebin.com/" + pasteParts[0];
-		this.id = pasteParts[0];
-		this.name = pasteParts[1];
-		try
-		{
-			this.text = LineReader.readStringFromBuffer(new BufferedReader(new InputStreamReader(new URL("http://pastebin.com/download.php?i=" + this.id).openConnection().getInputStream())));
-		} catch (IOException e)
-		{
-			e.printStackTrace();
-		}
-	}
+    public String getName() {
+        return name;
+    }
 
 }

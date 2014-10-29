@@ -83,41 +83,7 @@ public class Scraper {
                         if (alertStrings.length != 0) {
                             for (String alertString : alertStrings) {
                                 if (paste.getText().contains(alertString)) {
-                                    final JFrame alert = new JFrame("Paste with term " + alertString + " found.");
-
-                                    alert.setLayout(new GridLayout());
-
-                                    JTextArea textArea = new JTextArea("Found term \"" + alertString + "\" in the paste " + paste.getName() + "\n");
-                                    textArea.append("Link to paste: " + paste.getUrl() + "\n\n\n");
-                                    int indexOfKeyword = paste.getText().indexOf(alertString);
-                                    textArea.append("Preview: \n" + paste.getText().substring((indexOfKeyword - 40) < 0 ? 0 : (indexOfKeyword - 40), (indexOfKeyword + 40) > paste.getText().length() ? 0 : (indexOfKeyword + 40)));
-                                    JButton copyButton = new JButton("Click to open URL.");
-
-                                    copyButton.addActionListener(new ActionListener() {
-                                        @Override
-                                        public void actionPerformed(ActionEvent e) {
-                                            try {
-                                                Desktop.getDesktop().browse(new URI(paste.getUrl()));
-                                                alert.dispose();
-                                            } catch (IOException | URISyntaxException e1) {
-                                                e1.printStackTrace();
-                                            }
-                                        }
-                                    });
-                                    textArea.setEditable(false);
-                                    alert.getContentPane().add(textArea);
-                                    alert.getContentPane().add(copyButton);
-                                    alert.setSize(900, 450);
-                                    alert.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-
-                                    if (!this.silent) {
-                                        alert.getToolkit().beep();
-                                        alert.show();
-                                    }
-                                    else {
-                                        alert.setState(Frame.ICONIFIED);
-                                        alert.setVisible(true);
-                                    }
+                                    createAlert(paste, alertString, silent);
 
                                     alerted = true;
                                     break;
@@ -136,6 +102,44 @@ public class Scraper {
             }
         }
         return null;
+    }
+
+    public void createAlert(final Paste paste, String alertString, boolean silent) {
+        final JFrame alert = new JFrame("Paste with term " + alertString + " found.");
+
+        alert.setLayout(new GridLayout());
+
+        JTextArea textArea = new JTextArea("Found term \"" + alertString + "\" in the paste " + paste.getName() + "\n");
+        textArea.append("Link to paste: " + paste.getUrl() + "\n\n\n");
+        int indexOfKeyword = paste.getText().indexOf(alertString);
+        textArea.append("Preview: \n" + paste.getText().substring((indexOfKeyword - 40) < 0 ? 0 : (indexOfKeyword - 40), (indexOfKeyword + 40) > paste.getText().length() ? 0 : (indexOfKeyword + 40)));
+        JButton copyButton = new JButton("Click to open URL.");
+
+        copyButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    Desktop.getDesktop().browse(new URI(paste.getUrl()));
+                    alert.dispose();
+                } catch (IOException | URISyntaxException e1) {
+                    e1.printStackTrace();
+                }
+            }
+        });
+        textArea.setEditable(false);
+        alert.getContentPane().add(textArea);
+        alert.getContentPane().add(copyButton);
+        alert.setSize(900, 450);
+        alert.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+
+        if (!this.silent) {
+            alert.getToolkit().beep();
+            alert.show();
+        }
+        else {
+            alert.setState(Frame.ICONIFIED);
+            alert.setVisible(true);
+        }
     }
 
     public Set<Paste> scrape() {
