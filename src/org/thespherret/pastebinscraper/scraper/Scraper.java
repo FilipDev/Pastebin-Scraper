@@ -1,7 +1,6 @@
 package org.thespherret.pastebinscraper.scraper;
 
-import org.thespherret.pastebinscraper.files.LineReader;
-import org.thespherret.pastebinscraper.files.LineWriter;
+import me.pauzen.jlib.files.Files;
 
 import javax.swing.*;
 import java.awt.*;
@@ -92,7 +91,7 @@ public class Scraper {
                         }
 
                         if (alerted || saveAll)
-                            LineWriter.writeString(outputFile, paste.getText());
+                            Files.writeString(outputFile, paste.getText());
                     }
                 }
                 isScraping = false;
@@ -146,7 +145,7 @@ public class Scraper {
         Set<Paste> pastes = new HashSet<>();
         try {
             URL archive = new URL("http://pastebin.com/archive");
-            List<String> lines = LineReader.readBuffer(new BufferedReader(new InputStreamReader(archive.openConnection().getInputStream())));
+            List<String> lines = Files.readBuffer(new BufferedReader(new InputStreamReader(archive.openConnection().getInputStream())));
 
             lines = lines.subList(lines.indexOf("\t\t<table class=\"maintable\" cellspacing=\"0\">\n") + 5, lines.indexOf("\t\t</table>\n"));
 

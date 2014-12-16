@@ -1,6 +1,6 @@
 package org.thespherret.pastebinscraper.scraper;
 
-import org.thespherret.pastebinscraper.files.LineReader;
+import me.pauzen.jlib.files.Files;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -21,7 +21,7 @@ public class Paste {
         this.id = pasteParts[0];
         this.name = pasteParts.length != 2 ? "Untitled" : pasteParts[1];
         try {
-            this.text = LineReader.readStringFromBuffer(new BufferedReader(new InputStreamReader(new URL("http://pastebin.com/download.php?i=" + this.id).openConnection().getInputStream())));
+            this.text = Files.readBuffer(new BufferedReader(new InputStreamReader(new URL("http://pastebin.com/download.php?i=" + this.id).openConnection().getInputStream()))).toString();
         } catch (IOException e) {
             e.printStackTrace();
         }
